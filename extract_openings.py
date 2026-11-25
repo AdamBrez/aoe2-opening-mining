@@ -75,6 +75,10 @@ TRACKED_BUILDINGS = [
 ]
 NON_MILITARY_UNITS = {"Villager", "Fishing Ship", "Trade Cart"}
 
+# A Feudal-only action this many seconds before the estimated arrival marks the
+# session's Feudal click as unreliable.
+ARRIVAL_TOLERANCE_S = 5
+
 # Opening classification windows, in seconds after the estimated Feudal arrival.
 FAST_CASTLE_WINDOW_S = 180
 MAN_AT_ARMS_WINDOW_S = 60
@@ -158,9 +162,10 @@ def milestone_log(openings: pd.DataFrame) -> pd.DataFrame:
     houses = houses[houses["number"] <= NUMBERED_HOUSES]
     houses["milestone"] = "Build House " + houses["number"].astype(str)
 
-    log = pd.concat([firsts, houses.drop(columns="number")], ignore_index=True)
+    # The index is the event order of `openings`, which keeps same-second events in log order.
+    log = pd.concat([firsts, houses.drop(columns="number")]).sort_index()
     columns = ["session_id", "match_id", "player_id", "milestone", "time", "game_s", "villagers"]
-    return log.sort_values(["session_id", "game_s"])[columns]
+    return log[columns]
 
 
 def town_center_idle(session: pd.DataFrame, until_s: float) -> float:
@@ -258,8 +263,19 @@ def summarize_sessions(events: pd.DataFrame, arrival: pd.Series) -> pd.DataFrame
         row["opening_type"] = classify_opening(row)
         row["water_map"] = row["first_dock_s"] is not None and (click is None or row["first_dock_s"] < click)
         row["flag_missing_feudal_click"] = click is None and first_feudal_action is not None
-        row["flag_feudal_action_too_early"] = (
-            click is not None and first_feudal_action is not None and first_feudal_action < click
+        row["flag_feudal_action_before_arrival"] = (
+            arrival_est is not None and first_feudal_action is not None
+            and first_feudal_action < arrival_est - ARRIVAL_TOLERANCE_S
+        )
+        # Nobody reaches Feudal Age without houses, so their house commands are missing.
+        row["flag_no_houses"] = click is not None and row["first_house_s"] is None
+        # Players whose openings can be compared with the generic build orders.
+        row["in_analysis"] = (
+            click is not None
+            and not row["flag_feudal_action_before_arrival"]
+            and not row["flag_no_houses"]
+            and row["starting_villagers"] == 3
+            and not row["water_map"]
         )
         rows.append(row)
     return pd.DataFrame(rows)
@@ -292,8 +308,8 @@ def main() -> None:
     print(f"  sessions with a Feudal click: {sessions['feudal_click_s'].notna().sum()}; "
           f"opening events: {len(openings)}; milestone events: {len(milestones)}")
     print("  opening types: " + ", ".join(f"{k} {v}" for k, v in sessions["opening_type"].value_counts().items()))
-    flagged = sessions["flag_missing_feudal_click"] | sessions["flag_feudal_action_too_early"]
-    print(f"  sessions with data flags: {flagged.sum()}")
+    flagged = sessions.filter(like="flag_").any(axis=1)
+    print(f"  sessions with data flags: {flagged.sum()}; in analysis: {sessions['in_analysis'].sum()}")
     print(f"  output: {out_dir}")
 
 
