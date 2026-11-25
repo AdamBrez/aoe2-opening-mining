@@ -47,7 +47,7 @@ follow the build orders?**
 |---|----------|--------------|-----------|
 | RQ1 (B) | Which openings do players actually play? | Discovery, variant analysis | DFG and Split/Heuristic Miner on the opening log; group players into opening types (Scouts, Archers, Drush, Fast Castle) by clustering their action sequences |
 | RQ2 (B) | How closely do players follow the build order of their opening? | Conformance checking, declarative PM | Build orders modelled as Petri nets; alignment fitness per player; Declare rules for the flexible parts (e.g. *mill before Feudal*, *Loom before Feudal*) |
-| RQ3 (A) | Where is time lost? | Performance mining | Time from match start to the start of Feudal research; town-center idle time between villagers; Feudal queue wait (the research waits behind villagers still queued at the click); timing of key buildings against the build order; bottleneck analysis |
+| RQ3 (A) | Where is time lost? | Performance mining | Delay of each milestone against the build order, and in which step the delay grows (e.g. between mill and Feudal click); time of the Feudal click; town-center idle time; bottleneck analysis |
 | RQ4 (A+B) | Which deviations and time losses matter most? | Process mining + data mining | Relate deviations and idle times to Feudal timing (regression / decision tree), within each opening type |
 
 ## Expected outcome
@@ -63,12 +63,18 @@ For each common opening, a short list of:
 ## Approach
 
 1. **Data preparation:** one case = one player in one match (the `Session`
-   object). Keep events up to the moment Feudal Age research starts. Remove
-   noise (e.g. `Set Gather Point None`, pre-built map walls), filter out
-   unusual game modes.
-2. **Reference models:** translate 3–4 build orders into the dataset's
-   activity names (`Start Build Mill`, `Command Research Feudal Age`, …).
-3. **Analysis:** RQ1 → RQ4 as in the table above, using pm4py.
+   object). Keep events up to the estimated Feudal arrival (Feudal click +
+   130 s research), which includes what players do while the research runs.
+   Remove noise (e.g. pre-built map walls).
+2. **Abstraction:** turn each opening into a short milestone trace from player
+   commands only (houses 1–4, lumber camp, mill, mining camp, farm, barracks,
+   dock, Loom, first militia, Feudal click).
+3. **Opening types:** classify each player by rules on the timing of key
+   commands (Fast Castle, Men-at-Arms, Drush, Scouts, Archers), validated
+   later by clustering.
+4. **Reference models:** 4 generic build orders (Scouts, Archers, Drush, Fast
+   Castle) translated into the same milestones.
+5. **Analysis:** RQ1 → RQ4 as in the table above, using pm4py.
 
 ## Limitations
 
@@ -79,8 +85,11 @@ For each common opening, a short list of:
   resource split only.
 - Different openings aim for different Feudal times, so all comparisons are
   made within the same opening type.
-- Events triggered by the game (villager spawned, building finished) are
-  reconstructed by the dataset authors from player commands, not recorded.
-  Villager idle time is therefore not measurable (every new villager gets a
-  task at the moment it spawns), and being blocked by missing houses or
-  resources is probably not modelled.
+- Only player commands are recorded. Events triggered by the game (villager
+  spawned, research started/finished) are reconstructed by the dataset
+  authors and are unreliable: Feudal-only buildings often appear before the
+  reconstructed Feudal arrival, and villager ids are shared between the two
+  players of a match. We therefore rely on player commands, estimate Feudal
+  arrival as click + 130 s, and treat villager counts as an upper bound and
+  town-center idle time as a lower bound. Villager idle time and the reasons
+  behind a late Feudal click (e.g. slow food gathering) are not observable.

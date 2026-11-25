@@ -24,14 +24,30 @@ The full SQLite file is 850 MB; the 10-match sample is enough for development.
 
 ## Usage
 
+Add `--db data/age_of_empires_ocel2.sqlite` to the first and last command to
+use all 1,000 matches instead of the 10-match sample.
+
 ```sh
-.venv/bin/python extract_openings.py                                    # 10-match sample
-.venv/bin/python extract_openings.py --db data/age_of_empires_ocel2.sqlite  # all 1,000 matches
+.venv/bin/python extract_openings.py   # openings, milestones, opening types
+.venv/bin/python build_orders.py       # reference build orders
+.venv/bin/python compare_to_guides.py  # milestone delays against the guides
 ```
 
-Output goes to `output/<database name>/`:
+Output goes to `output/<database name>/` (`build_orders.csv` to `output/`):
 
-- `opening_events.csv`: event log of every player's opening (one case = one
-  player in one match), up to the start of Feudal Age research
-- `sessions.csv`: one row per player per match with opening KPIs (Feudal
-  timing, villagers, town-center idle time, Feudal queue wait, first buildings)
+- `opening_events.csv`: all events of every player's opening (one case = one
+  player in one match), up to the estimated Feudal arrival
+- `milestone_events.csv`: abstracted opening trace per player (first time of
+  each milestone, player commands only)
+- `sessions.csv`: one row per player per match with KPIs, opening type and
+  data-quality flags
+- `milestone_delays.csv`: each milestone's delay against the build order of
+  the player's opening type
+- `build_orders.csv`: the 4 reference build orders as milestones
+
+## Data reliability
+
+Only player commands are recorded in the game files; events triggered by the
+game are reconstructed by the dataset authors and are unreliable (see the
+limitations in [VISION.md](VISION.md)). The analysis therefore uses player
+commands, and the Feudal arrival is estimated as click + 130 s.
