@@ -110,6 +110,56 @@ vs. 8:20).
 - Players research Loom a median ~1 min before clicking Feudal; the guides
   do both together.
 
+## Signavio
+
+The results above are also in SAP Signavio Process Intelligence:
+
+- **Analysis configuration `PA231_project_milestones`** with the cleaned
+  milestone log of the 1,454 analysed players (13,743 events), created with
+  `export_signavio.py`. Ondřej's `PA231_project` with the raw log is
+  untouched. All team members have Manager access.
+- **Dashboard `Openings`** (shared, anyone in the configuration can view and
+  edit) with 5 widgets; the numbers match the pm4py results exactly:
+
+  | Widget | pm4py counterpart |
+  |--------|-------------------|
+  | Scouts – process map | `scouts_dfg_frequency.png` |
+  | Scouts – variants | `discovery/scouts/variants.csv` |
+  | Opening types (players) | `opening_types.png` |
+  | Feudal click vs. build order | `feudal_click_by_type.png` |
+  | Scouts – delay vs. build order per step | `delay_by_step.png` |
+
+- The two Scouts widgets use a widget filter `opening_type` (Case) = `Scouts`.
+  The other three are SIGNAL queries, because `opening_type` was uploaded as
+  an event attribute and interactive charts cannot count cases by it.
+- The Analysis Configuration overview list may still show 0 cases for this
+  configuration; that is a display delay, the data is there.
+
+## Consultation
+
+**Questions for the teacher**
+
+1. Is flattening the log to one case per player OK, or is an object-centric
+   analysis expected?
+2. Which part of the second half matters most: conformance checking, Declare
+   or the regression?
+3. Should conformance use the build orders as Petri nets with alignments,
+   Declare, or both? The guides are strict, but players are flexible in some
+   steps.
+4. What is the final deliverable (report, presentation, length)?
+
+**Likely questions and short answers**
+
+| Question | Answer |
+|----------|--------|
+| Why not object-centric? | Object ids and game events are unreliable, and our question is about one player's process. |
+| Doesn't the abstraction lose information? | Yes, on purpose: without it every trace was unique and the models unreadable. The raw events are kept in `opening_events.csv`. |
+| What do Split Miner fitness 0.80 and precision 0.96 mean? | Default parameters (epsilon 0.1, eta 0.4). The model covers most players and allows little extra behaviour; the misfits are the flexible House 4 / Loom positions. |
+| Is a late Feudal click a mistake? | Not necessarily; it points to slower food gathering, but that is an interpretation, not a measurement. |
+| No winners or ratings in the data? | We measure opening efficiency (time to Feudal), which is what build orders optimise; stated as a limitation. |
+| How reliable are the opening types? | Simple, transparent rules; clustering will check them in the second half. |
+| Where is data mining? | Rule-based classification now; clustering and regression / decision tree in the second half. |
+
 ## Second half (plan)
 
 - **RQ2, conformance checking:** build orders as Petri nets; alignment
