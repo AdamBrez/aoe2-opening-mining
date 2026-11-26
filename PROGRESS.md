@@ -137,7 +137,6 @@ The results above are also in SAP Signavio Process Intelligence:
 
 ## Consultation
 
-**Questions for the teacher**
 
 1. Is flattening the log to one case per player OK, or is an object-centric
    analysis expected?
